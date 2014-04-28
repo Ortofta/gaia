@@ -39,6 +39,7 @@ var Rocketbar = {
     this.titleContent = document.getElementById('rocketbar-title-content');
     this.form = document.getElementById('rocketbar-form');
     this.input = document.getElementById('rocketbar-input');
+    this.cancel = document.getElementById('rocketbar-cancel');
     this.results = document.getElementById('rocketbar-results');
 
     // Listen for settings changes
@@ -135,6 +136,7 @@ var Rocketbar = {
     this.input.addEventListener('focus', this);
     this.input.addEventListener('blur', this);
     this.input.addEventListener('input', this);
+    this.cancel.addEventListener('click', this);
     this.form.addEventListener('submit', this);
 
     // Listen for messages from search app
@@ -175,7 +177,9 @@ var Rocketbar = {
       case 'touchstart':
       case 'touchmove':
       case 'touchend':
-        this.handleTouch(e);
+        if (e.target != this.cancel) {
+          this.handleTouch(e);
+        }
         break;
       case 'transitionend':
         this.handleTransitionEnd(e);
@@ -188,6 +192,11 @@ var Rocketbar = {
         break;
       case 'input':
         this.handleInput(e);
+        break;
+      case 'click':
+        if (e.target == this.cancel) {
+          this.handleCancel(e);
+        }
         break;
       case 'submit':
         this.handleSubmit(e);
@@ -230,6 +239,7 @@ var Rocketbar = {
     this.input.removeEventListener('focus', this);
     this.input.removeEventListener('blur', this);
     this.input.removeEventListener('input', this);
+    this.cancel.removeEventListener('click', this);
     this.form.removeEventListener('submit', this);
 
     // Stop listening for messages from search app
@@ -332,6 +342,11 @@ var Rocketbar = {
    */
   showTaskManager: function() {
     this.cardView = true;
+    if (this._port) {
+      this._port.postMessage({
+        action: 'showTaskManager'
+      });
+    }
     this.showResults();
     window.dispatchEvent(new CustomEvent('taskmanagershow'));
     this.clear();
@@ -492,7 +507,8 @@ var Rocketbar = {
           !this.onHomescreen) {
           this.collapse();
         }
-        if (dy > this.TASK_MANAGER_THRESHOLD && !this.active) {
+        if (dy > this.TASK_MANAGER_THRESHOLD &&
+            !this.active && !this.cardView) {
           this.showTaskManager();
         }
         break;
@@ -569,6 +585,14 @@ var Rocketbar = {
       action: 'change',
       input: input
     });
+  },
+
+  /**
+   * Handle click of cancel button.
+   */
+  handleCancel: function(e) {
+    this.deactivate();
+    this.hideResults();
   },
 
   /**
